@@ -1,0 +1,34 @@
+<!DOCTYPE HTML>
+<html>
+	<body>
+		<table id="table1" border=1><th>Date</th><th style="width:87%;">Content</th></table>
+		<script src="https://cdn.jsdelivr.net/npm/idb@2.1.0/lib/idb.js"></script>
+		<script>	
+			(async function() {
+				const db = await idb.open('geth-dns-rebind', 2, upgradeDB => {
+					// Note: we don't use 'break' in this switch statement,
+					// the fall-through behaviour is what we want.
+					switch (upgradeDB.oldVersion) {
+						case 0:
+						upgradeDB.createObjectStore('keyval');
+						case 1:
+						upgradeDB.createObjectStore('objs', {keyPath: 'time'});
+					}
+				});
+				
+				const objects = await db.transaction('objs').objectStore('objs').getAll();
+				const output = document.querySelector("#table1 tbody");
+				for (const obj of objects) {
+					output.innerHTML += `<tr><td>${obj.time}</td><td>${obj.data}</td></tr>`;
+				}
+			})();
+			
+			navigator.serviceWorker.register('/service-worker.js');
+
+			navigator.serviceWorker.ready.then(function(swRegistration) {
+				console.debug("Going to request sync");
+				return swRegistration.sync.register("try-localhost2");
+			});
+		</script>
+	</body>
+</html>
